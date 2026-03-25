@@ -1,6 +1,7 @@
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as T
 from torch.utils.data import DataLoader
+import os
 
 def get_dataloaders(data_dir, batch_size=32):
     transform = T.Compose([
@@ -15,7 +16,23 @@ def get_dataloaders(data_dir, batch_size=32):
     tiny_imagenet_dataset_train = ImageFolder(root=train_path, transform=transform)
     tiny_imagenet_dataset_val = ImageFolder(root=val_path, transform=transform)
     
-    train_loader = DataLoader(tiny_imagenet_dataset_train, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(tiny_imagenet_dataset_val, batch_size=batch_size, shuffle=False)
+    # Rileva automaticamente il numero di core disponibili (solitamente 2 su Colab T4)
+    workers = os.cpu_count()
+    
+    train_loader = DataLoader(
+        tiny_imagenet_dataset_train, 
+        batch_size=batch_size, 
+        shuffle=True,
+        num_workers=workers,
+        pin_memory=True       # Accelera il trasferimento verso la GPU
+    )
+    
+    val_loader = DataLoader(
+        tiny_imagenet_dataset_val, 
+        batch_size=batch_size, 
+        shuffle=False,
+        num_workers=workers,
+        pin_memory=True
+    )
     
     return train_loader, val_loader
