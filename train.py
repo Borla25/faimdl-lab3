@@ -62,7 +62,12 @@ def main():
         # Salvataggio del modello migliore
         if val_accuracy > best_acc:
             best_acc = val_accuracy
-            torch.save(model.state_dict(), 'best_custom_model.pth')
+            import os
+            # Crea il percorso su Drive
+            save_path = '/content/drive/MyDrive/MLDL_Lab3_Checkpoints'
+            os.makedirs(save_path, exist_ok=True)
+            # Salva il file dentro Drive
+            torch.save(model.state_dict(), os.path.join(save_path, 'best_custom_model.pth'))
             print(f' NEW BEST! Model saved with {best_acc:.2f}% accuracy')
 
     print("-" * 30)
