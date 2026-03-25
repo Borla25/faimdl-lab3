@@ -1,39 +1,40 @@
 import torch
-from torch import nn
-from models.custom_model import CustomNet
 from dataset.dataloader import get_dataloaders
+from models.custom_model import CustomNet 
+import os
 
-def validate(model, val_loader, criterion, device):
-    model.eval()
-    val_loss = 0
-    correct, total = 0, 0
-
-    with torch.no_grad():
-        for batch_idx, (inputs, targets) in enumerate(val_loader):
-            inputs, targets = inputs.to(device), targets.to(device)
-
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
-
-            val_loss += loss.item()
-            _, predicted = outputs.max(1)
-            total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
-
-    val_loss = val_loss / len(val_loader)
-    val_accuracy = 100. * correct / total
-
-    print(f'Validation Loss: {val_loss:.6f} Acc: {val_accuracy:.2f}%')
-    return val_accuracy
-
-if __name__ == "__main__":
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def evaluate():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    data_dir = 'tiny-imagenet/tiny-imagenet-200'
+    print("Caricamento dataloader...")
+    _, val_loader = get_dataloaders(data_dir, batch_size=32)
+    
+    print("Inizializzazione modello...")
     model = CustomNet().to(device)
     
-    # Carica i pesi del modello addestrato
-    model.load_state_dict(torch.load("best_custom_model.pth"))
+    checkpoint_path = '/content/drive/MyDrive/MLDL_Lab3_Checkpoints/best_custom_model.pth'
+    if not os.path.exists(checkpoint_path):
+        print(f"Errore critico: File dei pesi non trovato in {checkpoint_path}")
+        return
+        
+    print("Caricamento pesi da Google Drive...")
+    model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+    model.eval()
     
-    criterion = nn.CrossEntropyLoss()
-    _, val_loader = get_dataloaders("tiny-imagenet/tiny-imagenet-200", batch_size=32)
+    correct = 0
+    total = 0
+    print("Inizio calcolo accuratezza sul Validation Set...")
+    with torch.no_grad():
+        for images, labels in val_loader:
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
     
-    validate(model, val_loader, criterion, device)
+    accuracy = 100 * correct / total
+    print(f"Accuratezza finale: {accuracy:.2f}%")
+
+if __name__ == '__main__':
+    evaluate()
